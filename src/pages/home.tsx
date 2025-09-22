@@ -10,12 +10,16 @@ import type { Task } from '../hooks/useTasks';
 const HomePage: React.FC = () => {
   const { user, logout, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const { tasks, loading: tasksLoading, addTask, updateTask, deleteTask } = useTasks();
+  const { tasks, loading: tasksLoading, addTask, updateTask, deleteTask, error: tasksError } = useTasks();
 
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Debug logging
+  console.log('Auth state:', { user, isAuthenticated, authLoading });
+  console.log('Tasks state:', { tasks, tasksLoading, tasksError });
 
   if (authLoading) return null;
 
@@ -80,7 +84,7 @@ const HomePage: React.FC = () => {
             <div className="flex justify-between items-center">
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">
-                  Welcome back, {user?.displayName}!
+                  Welcome back!
                 </h1>
                 <p className="text-gray-600 mt-1">
                   Email: {user?.email}
@@ -114,6 +118,13 @@ const HomePage: React.FC = () => {
               <h2 className="text-xl font-semibold text-gray-900">
                 Your Tasks ({tasks.length})
               </h2>
+              {tasksError && (
+                <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm text-red-600">
+                    Error loading tasks: {tasksError}
+                  </p>
+                </div>
+              )}
             </div>
             <div className="p-6">
               <TaskList

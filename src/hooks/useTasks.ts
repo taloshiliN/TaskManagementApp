@@ -47,9 +47,14 @@ export const useTasks = () => {
       (querySnapshot) => {
         const tasksData: Task[] = [];
         querySnapshot.forEach((doc) => {
+          const data = doc.data();
           tasksData.push({
             id: doc.id,
-            ...doc.data()
+            title: data.title || '',
+            description: data.description || '',
+            createdAt: data.createdAt || Timestamp.now(),
+            updatedAt: data.updatedAt || Timestamp.now(),
+            ownerId: data.ownerId || user.uid
           } as Task);
         });
         setTasks(tasksData);
@@ -57,15 +62,52 @@ export const useTasks = () => {
         setError(null);
       },
       (err) => {
-        console.error('Error fetching tasks:', err);
-        setError(err.message);
-        setLoading(false);
+        console.error('Error fetching tasks with ordering:', err);
+
+        // If ordering fails, try without ordering as fallback
+        const fallbackQuery = query(
+          collection(db, 'tasks'),
+          where('ownerId', '==', user.uid)
+        );
+
+        const fallbackUnsubscribe = onSnapshot(
+          fallbackQuery,
+          (fallbackSnapshot) => {
+            const fallbackTasks: Task[] = [];
+            fallbackSnapshot.forEach((doc) => {
+              const data = doc.data();
+              fallbackTasks.push({
+                id: doc.id,
+                title: data.title || '',
+                description: data.description || '',
+                createdAt: data.createdAt || Timestamp.now(),
+                updatedAt: data.updatedAt || Timestamp.now(),
+                ownerId: data.ownerId || user.uid
+              } as Task);
+            });
+            // Sort manually by createdAt
+            fallbackTasks.sort((a, b) => {
+              const aTime = a.createdAt?.toMillis?.() || 0;
+              const bTime = b.createdAt?.toMillis?.() || 0;
+              return bTime - aTime;
+            });
+            setTasks(fallbackTasks);
+            setLoading(false);
+            setError('Loaded tasks without ordering - some tasks may be missing timestamps');
+          },
+          (fallbackErr) => {
+            console.error('Error with fallback query:', fallbackErr);
+            setError(fallbackErr.message);
+            setLoading(false);
+          }
+        );
+
+        return () => fallbackUnsubscribe();
       }
     );
 
     return () => unsubscribe();
   }, [user]);
-
   const addTask = async (title: string, description: string): Promise<boolean> => {
     if (!user) return false;
 
