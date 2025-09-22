@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users collection rules
+    match /users/{userId} {
+      // Allow users to read their own data
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Allow users to create their own user document during registration
+      allow create: if request.auth != null && request.auth.uid == userId;
+
+      // Allow users to update their own data
+      allow update: if request.auth != null && request.auth.uid == userId;
+
+      // Prevent users from deleting their own accounts through Firestore
+      allow delete: if false;
+    }
+
+    // Tasks collection rules
+    match /tasks/{taskId} {
+      // Allow users to read only their own tasks
+      allow read: if request.auth != null && request.auth.uid == resource.data.ownerId;
+
+      // Allow users to create tasks with their own ownerId
+      allow create: if request.auth != null &&
+                   request.auth.uid == request.resource.data.ownerId;
+
+      // Allow users to update only their own tasks
+      allow update: if request.auth != null &&
+                   request.auth.uid == resource.data.ownerId;
+
+      // Allow users to delete only their own tasks
+      allow delete: if request.auth != null &&
+                   request.auth.uid == resource.data.ownerId;
+    }
+
+    // Default deny all other operations
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
