@@ -17,7 +17,7 @@ interface FormData {
 }
 
 const AuthForm: React.FC<AuthFormProps> = ({ title, onSubmit, children, isLoading = false }) => {
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>();
+  const { handleSubmit, formState: {  } } = useForm<FormData>();
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
